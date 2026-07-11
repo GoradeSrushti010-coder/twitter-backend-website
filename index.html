@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitter Backend City – Visualizing System Architecture</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-dark: #080c14;
+            --bg-card: rgba(15, 23, 42, 0.85);
+            --border-glow: rgba(0, 242, 254, 0.35);
+            --border-glow-hover: rgba(0, 242, 254, 0.8);
+            --neon-blue: #00f2fe;
+            --neon-purple: #9b51e0;
+            --neon-pink: #ff007f;
+            --neon-green: #39ff14;
+            --neon-yellow: #ffdf00;
+            --neon-red: #ff3333;
+            
+            /* High-Contrast Text Colors */
+            --text-muted: #e2e8f0; 
+            --text-light: #ffffff; 
+            --text-body: #f8fafc;  
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-body);
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        code, pre, .tech-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--neon-blue);
+        }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glow);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .glass-panel:hover {
+            border-color: var(--border-glow-hover);
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.25);
+        }
+
+        /* Header / Navbar */
+        .navbar {
+            background: rgba(8, 12, 20, 0.95) !important;
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-link {
+            color: var(--text-muted) !important;
+            font-weight: 600;
+        }
+
+        .nav-link:hover {
+            color: var(--neon-blue) !important;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            padding: 140px 0 80px;
+            position: relative;
+            background: radial-gradient(circle at 50% 30%, rgba(0, 242, 254, 0.12), transparent 60%);
+        }
+
+        @keyframes marchLine {
+            to { stroke-dashoffset: -40; }
+        }
+
+        /* Architectural Map SVG Wrapper */
+        .map-wrapper {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid rgba(0, 242, 254, 0.4);
+            background: rgba(10, 15, 28, 0.95);
+            box-shadow: 0 15px 45px rgba(0,0,0,0.6);
+        }
+
+        .data-flow-line {
+            stroke-dasharray: 8;
+            animation: marchLine 1.5s linear infinite;
+        }
+
+        /* Active component highlight animations */
+        .highlight-pulse {
+            animation: pulseGlow 1.5s infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            from { filter: drop-shadow(0 0 2px var(--neon-blue)); }
+            to { filter: drop-shadow(0 0 12px var(--neon-blue)); }
+        }
+
+        /* Dual-View Toggle Buttons */
+        .view-toggle-btn {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 6px 14px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .view-toggle-btn.active {
+            background: var(--neon-blue);
+            color: #000000;
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.4);
+        }
+
+        /* Architectural System Cards */
+        .component-card {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .component-card svg {
+            width: 100%;
+            max-height: 160px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            background: rgba(5, 5, 10, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .badge-tech {
+            background: rgba(0, 242, 254, 0.15);
+            color: var(--neon-blue);
+            border: 1px solid rgba(0, 242, 254, 0.4);
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 4px;
+        }
+
+        /* Interactive Path flow console */
+        .console-window {
+            background: #05070c;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 15px;
+            height: 380px;
+            overflow-y: auto;
+        }
+
+        .console-line {
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            border-left: 3px solid transparent;
+            padding-left: 10px;
+            color: #ffffff;
+        }
+
+        .console-line.active {
+            border-color: var(--neon-blue);
+            color: var(--neon-blue);
+            background: rgba(0, 242, 254, 0.08);
+        }
+
+        /* Gallery */
+        .gallery-item {
+            overflow: hidden;
+            border-radius: 8px;
+            position: relative;
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .gallery-item:hover {
+            border-color: var(--neon-blue);
+            transform: translateY(-4px);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .system-stat {
+            font-size: 0.8rem;
+            color: var(--neon-blue);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        .system-val {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        /* Flow diagram visualization */
+        .flow-diagram-container {
+            position: relative;
+            padding: 20px;
+        }
+
+        .flow-step-node {
+            display: flex;
+            align-items: center;
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 12px;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .flow-step-node.active {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.35);
+            background: rgba(0, 242, 254, 0.1);
+        }
+
+        .flow-arrow {
+            text-align: center;
+            color: var(--neon-blue);
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+        }
+
+        /* Architect Showcase Section Styles */
+        .architect-section {
+            background: radial-gradient(circle at 50% 80%, rgba(155, 81, 224, 0.12), transparent 50%);
+            border-top: 1px solid rgba(0, 242, 254, 0.15);
+            position: relative;
+        }
+
+        .architect-image-container {
+            position: relative;
+            max-width: 320px;
+            margin: 0 auto;
+        }
+
+        .architect-img-frame {
+            border: 2px solid var(--neon-blue);
+            box-shadow: 0 0 30px rgba(0, 242, 254, 0.35);
+            border-radius: 20px;
+            overflow: hidden;
+            background-color: rgba(15, 23, 42, 0.9);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .architect-img-frame:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 40px rgba(0, 242, 254, 0.5), 0 0 15px rgba(155, 81, 224, 0.4);
+            border-color: var(--neon-purple);
+        }
+
+        .architect-img-frame img {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: cover;
+        }
+
+        .architect-accent-tag {
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+            color: #000;
+            font-weight: 800;
+            padding: 8px 22px;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        .text-neon-cyan { color: var(--neon-blue) !important; }
+        .text-neon-yellow { color: var(--neon-yellow) !important; }
+        .text-neon-green { color: var(--neon-green) !important; }
+        .text-neon-red { color: var(--neon-red) !important; }
+        .text-white-bold { color: #ffffff !important; font-weight: 700; }
+
+        .custom-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #1e293b;
+            outline: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .custom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--neon-blue);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 40px 0;
+            background: #04060a;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <i class="fa-solid fa-city me-2 text-info"></i> TWITTER BACKEND CITY
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarText">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    <li class="nav-item"><a class="nav-link" href="#overview">Smart City Grid</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#components">Core Districts</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#planner">Capacity Planner</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#challenge">Architecture Challenge</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#flow">Data Pipelines</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#physical-gallery">Physical Gallery</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#creator">The Creator</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section class="hero-section" id="overview">
+        <div class="container">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-5">
+                    <div class="badge-tech mb-3"><i class="fa-solid fa-microchip me-1"></i> HIGH-SCALE SYSTEM DESIGN</div>
+                    <h1 class="display-5 fw-bold mb-3 text-white">Twitter Backend City Layout</h1>
+                    <p class="text-white mb-4" style="font-size: 1.05rem; line-height: 1.6;">
+                        A real-world translation of microservice web topologies modeled into cardboard layouts. Scaled to handle millions of transactions, this model bridges theoretical software concepts into three-dimensional logical components.
+                    </p>
+                    <p class="text-neon-cyan fw-bold mb-4">
+                        <i class="fa-solid fa-circle-info me-2"></i> Use the console toggle on the right to compare the digital architectural blueprints directly with your physical cardboard model design.
+                    </p>
+                    <div class="d-flex gap-3 mt-4">
+                        <a href="#simulation" class="btn btn-outline-info px-4 py-2" style="border-radius: 8px; font-weight: 700;">
+                            <i class="fa-solid fa-terminal me-2"></i>Trigger Simulation
+                        </a>
+                        <a href="#components" class="btn btn-dark px-4 py-2 border-secondary" style="border-radius: 8px; font-weight: 700; color: #fff;">
+                            <i class="fa-solid fa-map me-2"></i>Explore Districts
+                        </a>
+                    </div>
+                    
+                    <div class="row mt-5 pt-3 border-top border-secondary border-opacity-25">
+                        <div class="col-4">
+                            <span class="system-stat">System Scale</span>
+                            <div class="system-val">Zeal '26</div>
+                        </div>
+                        <div class="col-4">
+                            <span class="system-stat">Nodes</span>
+                            <div class="system-val">14 Core</div>
+                        </div>
+                        <div class="col-4">
+                            <span class="system-stat">Architect</span>
+                            <div class="system-val">Backend of twitter</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-7">
+                    <!-- DUAL-PANEL WRAPPER: Switcher Console between Digital and Physical Model -->
+                    <div class="map-wrapper p-2">
+                        <div class="p-2 border-bottom border-secondary border-opacity-25 d-flex align-items-center justify-content-between text-white" style="font-size: 0.8rem;">
+                            <div class="d-flex gap-2">
+                                <button class="view-toggle-btn active" id="btn-toggle-digital" onclick="switchMainView('digital')">
+                                    <i class="fa-solid fa-diagram-project me-1"></i> Digital Map
+                                </button>
+                                <button class="view-toggle-btn" id="btn-toggle-physical" onclick="switchMainView('physical')">
+                                    <i class="fa-solid fa-image me-1"></i> Physical Model
+                                </button>
+                            </div>
+                            <span class="text-neon-cyan">Model Sync: Online</span>
+                        </div>
+
+                        <!-- PANEL A: Digital Blueprint SVG -->
+                        <div id="container-view-digital" class="w-100">
+                            <svg viewBox="0 0 800 550" class="w-100" style="background:#0a0f1d;">
+                                <defs>
+                                    <linearGradient id="blueGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#00f2fe" />
+                                        <stop offset="100%" stop-color="#4facfe" />
+                                    </linearGradient>
+                                    <filter id="glow" x="-10%" y="-10%" width="120%" height="120%">
+                                        <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#00f2fe" flood-opacity="0.6"/>
+                                    </filter>
+                                </defs>
+
+                                <!-- Outer Model Boundary Grid -->
+                                <rect x="10" y="10" width="780" height="530" rx="10" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="2" />
+
+                                <!-- Header Signboard mimicking "Twitter Backend City" cardboard arch -->
+                                <g transform="translate(400, 50)">
+                                    <path d="M -220,10 Q 0,-30 220,10 L 200,45 Q 0,15 -200,45 Z" fill="rgba(15, 23, 42, 0.9)" stroke="#00f2fe" stroke-width="2" />
+                                    <text x="0" y="28" fill="#fff" text-anchor="middle" font-family="'Inter', sans-serif" font-weight="800" font-size="18" letter-spacing="1.5">TWITTER BACKEND CITY</text>
+                                </g>
+
+                                <!-- Asphalt Roads mimicking physical model black cardboard lanes -->
+                                <g stroke="#1a1f2c" stroke-width="24" fill="none" stroke-linecap="round">
+                                    <path d="M 120,420 L 260,260 L 370,260" />
+                                    <path d="M 430,260 L 530,260 L 680,410" />
+                                    <path d="M 400,280 L 400,460" />
+                                </g>
+                                <!-- Road Center dashed lines -->
+                                <g stroke="#fff" stroke-width="2" fill="none" stroke-dasharray="6,8" opacity="0.8">
+                                    <path d="M 120,420 L 260,260 L 370,260" />
+                                    <path d="M 430,260 L 530,260 L 680,410" />
+                                    <path d="M 400,280 L 400,460" />
+                                </g>
+
+                                <!-- Left: Welcome / API Gateway checkpoint -->
+                                <g transform="translate(90, 360)" id="svg-api-gateway">
+                                    <rect x="0" y="0" width="80" height="70" rx="6" fill="#1e293b" stroke="#00f2fe" stroke-width="1.5" />
+                                    <rect x="10" y="10" width="60" height="18" fill="#0b0f19" />
+                                    <text x="40" y="22" fill="#39ff14" font-size="7" text-anchor="middle" class="tech-font">API GATEWAY</text>
+                                    <text x="40" y="50" fill="#fff" font-size="8" text-anchor="middle" font-weight="bold">REST API</text>
+                                    <text x="40" y="60" fill="#e2e8f0" font-size="6" text-anchor="middle">Auth Entry</text>
+                                </g>
+
+                                <!-- Center: High Load Balancer Tower (Black tall cylinder) -->
+                                <g transform="translate(400, 250)" id="svg-load-balancer">
+                                    <ellipse cx="0" cy="20" rx="30" ry="10" fill="#111" stroke="#00f2fe" stroke-width="1.5" />
+                                    <path d="M -30,20 L -25,-60 A 25,8 0 0 1 25,-60 L 30,20" fill="#1e293b" stroke="#00f2fe" stroke-width="1.5" />
+                                    <ellipse cx="0" cy="-60" rx="25" ry="8" fill="#334155" stroke="#00f2fe" stroke-width="1.5" />
+                                    <rect x="-40" y="-35" width="80" height="18" rx="3" fill="#fff" stroke="#111" />
+                                    <text x="0" y="-23" fill="#000" font-size="8" text-anchor="middle" font-weight="bold">Load Balancer</text>
+                                </g>
+
+                                <!-- The Three Houses layout: Yellow, Red, Blue -->
+                                <!-- House 1: Notification Service (Yellow) -->
+                                <g transform="translate(230, 340)" id="svg-notification">
+                                    <polygon points="25,0 50,20 0,20" fill="#ffdf00" stroke="#000" stroke-width="1" />
+                                    <rect x="0" y="20" width="50" height="40" fill="#ffdf00" stroke="#000" stroke-width="1" />
+                                    <text x="25" y="38" fill="#000" font-size="7" font-weight="bold" text-anchor="middle">Notification</text>
+                                    <text x="25" y="48" fill="#000" font-size="7" font-weight="bold" text-anchor="middle">Service</text>
+                                </g>
+
+                                <!-- House 2: Messaging Service (Red) -->
+                                <g transform="translate(310, 340)" id="svg-messaging">
+                                    <polygon points="25,0 50,20 0,20" fill="#ff3333" stroke="#000" stroke-width="1" />
+                                    <rect x="0" y="20" width="50" height="40" fill="#ff3333" stroke="#000" stroke-width="1" />
+                                    <text x="25" y="38" fill="#fff" font-size="7" font-weight="bold" text-anchor="middle">Messaging</text>
+                                    <text x="25" y="48" fill="#fff" font-size="7" font-weight="bold" text-anchor="middle">Service</text>
+                                </g>
+
+                                <!-- House 3: Feed Service (Blue) -->
+                                <g transform="translate(390, 340)" id="svg-feed">
+                                    <polygon points="25,0 50,20 0,20" fill="#00f2fe" stroke="#000" stroke-width="1" />
+                                    <rect x="0" y="20" width="50" height="40" fill="#00f2fe" stroke="#000" stroke-width="1" />
+                                    <text x="25" y="38" fill="#000" font-size="7" font-weight="bold" text-anchor="middle">Feed</text>
+                                    <text x="25" y="48" fill="#000" font-size="7" font-weight="bold" text-anchor="middle">Service</text>
+                                </g>
+
+                                <!-- Cache Servers (Green Block on the right) -->
+                                <g transform="translate(530, 350)" id="svg-cache">
+                                    <rect x="0" y="0" width="110" height="45" rx="4" fill="#39ff14" stroke="#000" stroke-width="1" />
+                                    <rect x="15" y="-12" width="20" height="20" rx="3" fill="#fff" stroke="#111" />
+                                    <rect x="75" y="-12" width="20" height="20" rx="3" fill="#fff" stroke="#111" />
+                                    <text x="55" y="25" fill="#000" font-size="9" font-weight="bold" text-anchor="middle">Cache Servers</text>
+                                </g>
+
+                                <!-- SQL Database (Black and white cylinder block on the far right) -->
+                                <g transform="translate(680, 280)" id="svg-database">
+                                    <rect x="0" y="0" width="70" height="70" rx="4" fill="#111" stroke="#fff" stroke-width="1.5" />
+                                    <ellipse cx="35" cy="15" rx="20" ry="6" fill="#fff" stroke="#000" />
+                                    <text x="35" y="42" fill="#fff" font-size="7" font-weight="bold" text-anchor="middle">SQL DATABASE</text>
+                                    <text x="35" y="52" fill="#e2e8f0" font-size="6" text-anchor="middle">Profiles & Data</text>
+                                </g>
+
+                                <!-- Security Shield block (Bottom Right foreground) -->
+                                <g transform="translate(540, 430)" id="svg-security">
+                                    <rect x="0" y="0" width="160" height="50" rx="6" fill="rgba(15, 23, 42, 0.9)" stroke="#ff3333" stroke-width="1.5" />
+                                    <path d="M 25,12 L 40,17 L 40,32 Q 25,42 10,32 L 10,17 Z" fill="#ff3333" stroke="#fff" stroke-width="1" />
+                                    <text x="95" y="20" fill="#fff" font-size="8" font-weight="bold" text-anchor="middle">Authentication & Encryption</text>
+                                    <text x="95" y="34" fill="#e2e8f0" font-size="7" text-anchor="middle">DDoS & Rate Limiting</text>
+                                </g>
+                            </svg>
+                        </div>
+
+                        <!-- PANEL B: Actual Physical Cardboard Model -->
+                        <div id="container-view-physical" class="w-100 d-none text-center" style="background:#0a0f1d; padding: 20px;">
+                            <img src="t.jpeg" alt="Twitter Backend City Physical cardboard model close up" class="img-fluid rounded border border-secondary" style="max-height: 480px; object-fit: contain; width: auto;" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'600\' height=\'400\' viewBox=\'0 0 600 400\'><rect width=\'600\' height=\'400\' fill=\'%230f172a\'/><text x=\'300\' y=\'200\' fill=\'%2300f2fe\' font-size=\'18\' font-family=\'sans-serif\' text-anchor=\'middle\'>[ srushti_gorade_closeup_model.jpg ]</text></svg>';">
+                            <p class="text-white mt-3 mb-0 small" style="letter-spacing: 0.5px;">
+                                <span class="text-neon-cyan">●</span> Actual Physical Model representation showing components matching the interactive blueprint map.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- NEW INTERACTIVE FEATURE: SCALE CAPACITY PLANNER -->
+    <section class="py-5 bg-dark border-top border-secondary border-opacity-25" id="planner">
+        <div class="container">
+            <div class="glass-panel p-4 p-lg-5">
+                <div class="row g-4 align-items-center">
+                    <div class="col-lg-5">
+                        <span class="badge-tech mb-3"><i class="fa-solid fa-calculator me-1"></i> Interactive Planning Tool</span>
+                        <h3 class="fw-bold text-white mb-3">Backend City Capacity Planner</h3>
+                        <p class="text-white" style="font-size: 1.05rem;">
+                            Adjust the overall incoming traffic request slider to visualize how Twitter Backend City scales its memory structures and buffer components under dynamic workloads.
+                        </p>
+                        
+                        <div class="mt-4">
+                            <label class="form-label d-flex justify-content-between text-white fw-bold">
+                                <span>Throughput (Requests / Second)</span>
+                                <span class="text-neon-cyan" id="rps-val">15,000 RPS</span>
+                            </label>
+                            <input type="range" class="custom-slider" id="rps-slider" min="1000" max="50000" step="1000" value="15000">
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-7">
+                        <div class="row g-3">
+                            <!-- Metric 1 -->
+                            <div class="col-sm-6">
+                                <div class="p-3 bg-black rounded border border-secondary border-opacity-50">
+                                    <div class="d-flex justify-content-between text-white mb-2 small">
+                                        <span>REDIS MEMORY LOAD</span>
+                                        <span id="metric-redis" class="text-neon-green">45 GB</span>
+                                    </div>
+                                    <div class="progress" style="height: 6px; background: #111;">
+                                        <div id="progress-redis" class="progress-bar bg-success" style="width: 30%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Metric 2 -->
+                            <div class="col-sm-6">
+                                <div class="p-3 bg-black rounded border border-secondary border-opacity-50">
+                                    <div class="d-flex justify-content-between text-white mb-2 small">
+                                        <span>KAFKA PARTITIONS</span>
+                                        <span id="metric-kafka" class="text-neon-cyan">24 Nodes</span>
+                                    </div>
+                                    <div class="progress" style="height: 6px; background: #111;">
+                                        <div id="progress-kafka" class="progress-bar bg-info" style="width: 48%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Metric 3 -->
+                            <div class="col-sm-6">
+                                <div class="p-3 bg-black rounded border border-secondary border-opacity-50">
+                                    <div class="d-flex justify-content-between text-white mb-2 small">
+                                        <span>REPLICATION LAG</span>
+                                        <span id="metric-lag" class="text-neon-yellow">&lt; 150ms</span>
+                                    </div>
+                                    <div class="progress" style="height: 6px; background: #111;">
+                                        <div id="progress-lag" class="progress-bar bg-warning" style="width: 15%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Metric 4 -->
+                            <div class="col-sm-6">
+                                <div class="p-3 bg-black rounded border border-secondary border-opacity-50">
+                                    <div class="d-flex justify-content-between text-white mb-2 small">
+                                        <span>ESTIMATED DAILY DATA</span>
+                                        <span id="metric-storage" class="text-neon-pink">1.2 TB</span>
+                                    </div>
+                                    <div class="progress" style="height: 6px; background: #111;">
+                                        <div id="progress-storage" class="progress-bar bg-danger" style="width: 25%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CORE DISTRICTS (THE 14 IMAGES/COMPONENTS REQUIRED) -->
+    <section class="py-5" id="components">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold mb-2 text-white">Architectural District Index</h2>
+                <p class="text-white max-w-2xl mx-auto" style="font-size: 1.05rem;">Exploring the 14 structural blueprints making up our backend city's execution grid.</p>
+            </div>
+
+            <div class="row g-4" id="components-grid">
+                
+                <!-- 1. API Gateway Tower -->
+                <div class="col-lg-4 col-md-6 component-item" data-tags="api gateway tower entry request" onclick="highlightMapNode('svg-api-gateway')">
+                    <div class="glass-panel p-4 component-card">
+                        <div>
+                            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="100%" height="100%" fill="#0a0f1d"/>
+                                <g transform="translate(70, 15)">
+                                    <rect x="15" y="10" width="30" height="80" rx="3" fill="rgba(0, 242, 254, 0.15)" stroke="#00f2fe" stroke-width="1.5" />
+                                    <rect x="23" y="70" width="14" height="20" fill="rgba(0, 242, 254, 0.8)" filter="url(#glow)" />
+                                    <path d="M -40,30 L 10,40 M -40,50 L 10,50 M -40,70 L 10,60" stroke="#00f2fe" stroke-width="1.5" stroke-dasharray="4" class="data-flow-line" />
+                                    <circle cx="-40" cy="30" r="3" fill="#ff007f" />
+                                    <circle cx="-40" cy="50" r="3" fill="#ff007f" />
+                                    <circle cx="-40" cy="70" r="3" fill="#ff007f" />
+                                </g>
+                            </svg>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-bold mb-0 text-neon-cyan">1. API Gateway Tower</h5>
+                                <span class="badge-tech">Nginx / Envoy</span>
+                            </div>
+                            <p class="text-white small">
+                                The grand checkpoint of Twitter Backend City. It intercepts incoming client traffic, certificates TLS, runs rate limiting, and forwards paths securely.
+                            </p>
+                        </div>
+                        <div class="border-top border-secondary border-opacity-25 pt-2 mt-2 d-flex justify-content-between text-white small">
+                            <span>Latency: &lt;1.5ms</span>
+                            <span>Target: Load Balancer</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Authentication Center -->
+                <div class="col-lg-4 col-md-6 component-item" data-tags="authentication center security lock shield fingerprint" onclick="highlightMapNode('svg-security')">
+                    <div class="glass-panel p-4 component-card">
+                        <div>
+                            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="100%" height="100%" fill="#0a0f1d"/>
+                                <g transform="translate(75, 20)">
+                                    <path d="M 25,10 L 50,20 L 50,55 Q 25,80 0,55 L 0,20 Z" fill="rgba(155, 81, 224, 0.15)" stroke="#9b51e0" stroke-width="2" />
+                                    <rect x="18" y="35" width="14" height="12" rx="2" fill="#9b51e0" />
+                                    <path d="M 21,35 L 21,28 A 4,4 0 0 1 29,28 L 29,35" stroke="#9b51e0" stroke-width="2" fill="none" />
+                                    <circle cx="25" cy="42" r="22" stroke="#9b51e0" stroke-width="1" stroke-dasharray="3" fill="none" />
+                                </g>
+                            </svg>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-bold mb-0 text-neon-cyan">2. Auth Center</h5>
+                                <span class="badge-tech">OAuth2 / JWT</span>
+                            </div>
+                            <p class="text-white small">
+                                Verifies users' digital fingerprints, secure login sessions, and validates asymmetric JWT keys prior to admitting downstream resource access.
+                            </p>
+                        </div>
+                        <div class="border-top border-secondary border-opacity-25 pt-2 mt-2 d-flex justify-content-between text-white small">
+                            <span>Type: State-free Token</span>
+                            <span>Alg: RS256</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Load Balancer Junction -->
+                <div class="col-lg-4 col-md-6 component-item" data-tags="load balancer junction distribution scale traffic" onclick="highlightMapNode('svg-load-balancer')">
+                    <div class="glass-panel p-4 component-card">
+                        <div>
+                            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="100%" height="100%" fill="#0a0f1d"/>
+                                <g transform="translate(100, 60)">
+                                    <circle cx="0" cy="0" r="16" fill="rgba(0, 242, 254, 0.1)" stroke="#00f2fe" stroke-width="2" />
+                                    <path d="M -70,0 L -16,0" stroke="#00f2fe" stroke-width="2" />
+                                    <path d="M 16,0 L 60, -35" stroke="#00f2fe" stroke-width="2" stroke-dasharray="4" class="data-flow-line" />
+                                    <path d="M 16,0 L 60, 0" stroke="#00f2fe" stroke-width="2" stroke-dasharray="4" class="data-flow-line" />
+                                    <path d="M 16,0 L 60, 35" stroke="#00f2fe" stroke-width="2" stroke-dasharray="4" class="data-flow-line" />
+                                    <circle cx="60" cy="-35" r="4" fill="#39ff14" />
+                                    <circle cx="60" cy="0" r="4" fill="#39ff14" />
+                                    <circle cx="60" cy="35" r="4" fill="#39ff14" />
+                                </g>
+                            </svg>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-bold mb-0 text-neon-cyan">3. LB Junction</h5>
+                                <span class="badge-tech">HAProxy / Maglev</span>
+                            </div>
+                            <p class="text-white small">
+                                Distributes high load across multiple operational server groups. Uses modern hashing algorithms to balance incoming network flows perfectly.
+                            </p>
+                        </div>
+                        <div class="border-top border-secondary border-opacity-25 pt-2 mt-2 d-flex justify-content-between text-white small">
+                            <span>Strategy: Consistent Hash</span>
+                            <span>Uptime: 99.999%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Tweet Service Building -->
+                <div class="col-lg-4 col-md-6 component-item" data-tags="tweet service building writes social write" onclick="highlightMapNode('svg-messaging')">
+                    <div class="glass-panel p-4 component-card">
+                        <div>
+                            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="100%" height="100%" fill="#0a0f1d"/>
+                                <g transform="translate(60, 20)">
+                                    <rect x="10" y="10" width="60" height="50" rx="4" fill="rgba(0, 242, 254, 0.05)" stroke="#00f2fe" stroke-width="1.5" />
+                                    <path d="M 30,38 Q 25,38 25,32 Q 25,24 35,24 Q 38,20 45,20 Q 55,20 55,30 Q 60,30 60,35 Q 60,40 50,40 Z" fill="none" stroke="#00f2fe" stroke-width="1.5" />
+                                    <line x1="20" y1="48" x2="60" y2="48" stroke="rgba(0, 242, 254, 0.4)" stroke-width="2" />
+                                    <line x1="20" y1="54" x2="60" y2="54" stroke="rgba(0, 242, 254, 0.4)" stroke-width="2" />
+                                </g>
+                            </svg>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-bold mb-0 text-neon-cyan">4. Tweet Service</h5>
+                                <span class="badge-tech">Scala / gRPC</span>
+                            </div>
+                            <p class="text-white small">
+                                Directs incoming system write operations. Spawns custom tweet payloads, assigns unique Snowflake IDs, and commits metadata down pipelines.
+                            </p>
+                        </div>
+                        <div class="border-top border-secondary border-opacity-25 pt-2 mt-2 d-flex justify-content-between text-white small">
+                            <span>ID Generator: Snowflake</span>
+                            <span>Protocols: Protocol Buffers</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Feed Service Center -->
+                <div class="col-lg-4 col-md-6 component-item" data-tags="feed service timeline reads timeline fanout blue house" onclick="highlightMapNode('svg-feed')">
+                    <div class="glass-panel p-4 component-card">
+                        <div>
+                            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="100%" height="100%" fill="#0a0f1d"/>
+                                <g transform="translate(75, 20)">
+                                    <polygon points="25,0 50,20 0,20" fill="#00f2fe" stroke="#fff" stroke-width="1" />
+                                    <rect x="0" y="20" width="50" height="40" fill="#00f2fe" stroke="#fff" stroke-width="1" />
+                                    <circle cx="25" cy="40" r="6" fill="#05070c" />
+                                </g>
+                            </svg>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-bold mb-0 text-neon-cyan">5. Feed Service</h5>
+                                <span class="badge-tech">Redis / Java</span>
+                            </div>
+                            <p class="text-white small">
+                                Powers user home timelines. Reads structures aggressively from fast operational cache systems, performing critical fanouts for optimal performance.
+                            </p>
+                        </div>
+                        <div class="border-top border-secondary border-opacity-25 pt-2 mt-2 d-flex justify-content-between text-white small">
+                            <span>Read Strategy: Cache-Aside</span>
+                            <span>Physical Model: Blue House</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. Messaging Hub -->
+                <div class="col-lg-4 col-md-6 component-item" data-tags="messaging hub chat real-time dms red house" onclick="highlightMapNode('svg-messaging')">
+                    <div class="glass-panel p-4 component-card">
+                        <div>
+                            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="100%" height="100%" fill="#0a0f1d"/>
+                                <g transform="translate(75, 20)">
+                                    <polygon points="25,0 50,20 0,20" fill="#ff3333" stroke="#fff" stroke-width="1" />
+                                    <rect x="0" y="20" width="50" height="40" fill="#ff3333" stroke="#fff" stroke-width="1" />
+                                    <circle cx="25" cy="40" r="6" fill="#05070c" />
+                                </g>
+                            </svg>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-bold mb-0 text-neon-cyan">6. Messaging Hub</h5>
+                                <span class="badge-tech">Websockets / Go</span>
+                            </div>
+                            <p class="text-white small">
+                                Handles instant Direct Messages over bi-directional connections, maintaining lightweight sockets for fast deliveries between user profiles.
+                            </p>
+                        </div>
+                        <div class="border-top border-secondary border-opacity-25 pt-2 mt-2 d-flex justify-content-between text-white small">
+                            <span>Conn Type: WebSocket</span>
+                            <span>Physical Model: Red House</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. Notification Tower -->
+                <div class="col-lg-4 col-md-6 component-item" data-tags="notification tower alerts push bell yellow house" onclick="highlightMapNode('svg-notification')">
+                    <div class="glass-panel p-4 component-card">
+                        <div>
+                            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="100%" height="100%" fill="#0a0f1d"/>
+                                <g transform="translate(75, 20)">
+                                    <polygon points="25,0 50,20 0,20" fill="#ffdf00" stroke="#000" stroke-width="1" />
+                                    <rect x="0" y="20" width="50" height="40" fill="#ffdf00" stroke="#000" stroke-width="1" />
+                                    <circle cx="25" cy="40" r="6" fill="#05070c" />
+                                </g>
+                            </svg>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-bold mb-0 text-neon-cyan">7. Notification Tower</h5>
+                                <span class="badge-tech">APNS / FCM</span>
+                            </div>
+                            <p class="text-white small">
+                                Triggers instant alerts to millions of remote hardware targets. Coordinates system actions, mentions, and follows safely.
+                            </p>
+                        </div>
+                        <div class="border-top border-secondary border-opacity-25 pt-2 mt-2 d-flex justify-content-between text-white small">
+                            <span>Protocol: HTTP/2 Push</span>
+                            <span>Physical Model: Yellow House</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. Cache Warehouse -->
+                <div class="col-lg-4 col-md-6 component-item" data-tags="cache warehouse memory fast lightning redis memcached green block" onclick="highlightMapNode('svg-cache')">
+                    <div class="glass-panel p-4 component-card">
+                        <div>
+                            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="100%" height="100%" fill="#0a0f1d"/>
+                                <g transform="translate(45, 30)">
+                                    <rect x="0" y="20" width="110" height="40" rx="4" fill="#39ff14" stroke="#000" stroke-width="1" />
+                                    <rect x="15" y="5" width="20" height="20" rx="3" fill="#fff" stroke="#111" />
+                                    <rect x="75" y="5" width="20" height="20" rx="3" fill="#fff" stroke="#111" />
+                                </g>
+                            </svg>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-bold mb-0 text-neon-cyan">8. Cache Warehouse</h5>
+                                <span class="badge-tech">Redis / Memcached</span>
+                            </div>
+                            <p class="text-white small">
+                                Stores pre-computed timelines and session metadata directly inside RAM chips. Eliminates costly direct queries to permanent databases.
+                            </p>
+                        </div>
+                        <div class="border-top border-secondary border-opacity-25 pt-2 mt-2 d-flex justify-content-between text-white small">
+                            <span>Hit Rate: ~95%</span>
+                            <span>Physical Model: Green Block</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 9. Database Vault -->
+                <div class="col-lg-4 col-md-6 component-item" data-tags="database vault storage mysql cassandra sql cylinder black" onclick="highlightMapNode('svg-database')">
+                    <div class="glass-panel p-4 component-card">
+                        <div>
+                            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="100%" height="100%" fill="#0a0f1d"/>
+                                <g transform="translate(65, 15)">
+                                    <rect x="0" y="10" width="70" height="70" rx="4" fill="#111" stroke="#fff" stroke-width="1.5" />
+                                    <ellipse cx="35" cy="25" rx="20" ry="6" fill="#fff" stroke="#000" />
+                                    <line x1="15" y1="25" x2="15" y2="70" stroke="#fff" stroke-width="1" />
+                                    <line x1="55" y1="25" x2="55" y2="70" stroke="#fff" stroke-width="1" />
+                                </g>
+                            </svg>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-bold mb-0 text-neon-cyan">9. Database Vault</h5>
+                                <span class="badge-tech">Manhattan / MySQL</span>
+                            </div>
+                            <p class="text-white small">
+                                The ultimate system of record. Highly sharded, horizontally replicated table spaces designed to guarantee permanent data storage.
+                            </p>
+                        </div>
+                        <div class="border-top border-secondary border-opacity-25 pt-2 mt-2 d-flex justify-content-between text-white small">
+                            <span>Replication: Semi-Sync</span>
+                            <span>Physical Model: Black Cylinder</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 10. Streaming / Event Queue Center -->
+                <div class="col-lg-4 col-md-6 component-item" data-tags="streaming event queue kafka pipeline telemetry" onclick="highlightMapNode('svg-cache')">
+                    <div class="glass-panel p-4 component-card">
+                        <div>
+                            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="100%" height="100%" fill="#0a0f1d"/>
+                                <g transform="translate(30, 25)">
+                                    <rect x="0" y="20" width="140" height="30" rx="5" fill="rgba(255, 0, 127, 0.1)" stroke="#ff007f" stroke-width="1.5" />
+                                    <circle cx="20" cy="35" r="8" fill="#ff007f" />
+                                    <circle cx="55" cy="35" r="8" fill="#ff007f" />
+                                    <circle cx="90" cy="35" r="8" fill="#ff007f" />
+                                    <circle cx="125" cy="35" r="8" fill="#ff007f" />
+                                    <path d="M 20,35 L 125,35" stroke="#fff" stroke-dasharray="3" class="data-flow-line" opacity="0.5" />
+                                </g>
+                            </svg>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-bold mb-0 text-neon-cyan">10. Event Queue</h5>
+                                <span class="badge-tech">Apache Kafka</span>
+                            </div>
+                            <p class="text-white small">
+                                Absorbs immense asynchronous write traffic, acting as an event-driven buffer stream prior to writing data blocks to the hard disks.
+                            </p>
+                        </div>
+                        <div class="border-top border-secondary border-opacity-25 pt-2 mt-2 d-flex justify-content-between text-white small">
+                            <span>Type: Distributed Log</span>
+                            <span>Partitions: 128 / Topic</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 11. Security Headquarters -->
+                <div class="col-lg-4 col-md-6 component-item" data-tags="security headquarters firewall shield ddos encryption auth rate limiting" onclick="highlightMapNode('svg-security')">
+                    <div class="glass-panel p-4 component-card">
+                        <div>
+                            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="100%" height="100%" fill="#0a0f1d"/>
+                                <g transform="translate(60, 20)">
+                                    <rect x="5" y="10" width="70" height="50" rx="2" fill="rgba(255, 255, 255, 0.05)" stroke="rgba(255,255,255,0.2)" />
+                                    <path d="M 40,20 L 65,30 L 65,55 Q 40,75 15,55 L 15,30 Z" fill="none" stroke="#ff3333" stroke-width="2" />
+                                    <line x1="5" y1="25" x2="75" y2="25" stroke="rgba(255,255,255,0.1)" />
+                                    <line x1="5" y1="40" x2="75" y2="40" stroke="rgba(255,255,255,0.1)" />
+                                </g>
+                            </svg>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-bold mb-0 text-neon-cyan">11. Security HQ</h5>
+                                <span class="badge-tech">WAF / Cloudflare</span>
+                            </div>
+                            <p class="text-white small">
+                                Shields structures from network threats. Intercepts layer 7 DDoS waves, monitors web protocols, and drops rogue connections quickly.
+                            </p>
+                        </div>
+                        <div class="border-top border-secondary border-opacity-25 pt-2 mt-2 d-flex justify-content-between text-white small">
+                            <span>Threat Block: Layer 7</span>
+                            <span>Status: Shield Active</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 12. Cloud Computing -->
+                <div class="col-lg-4 col-md-6 component-item" data-tags="cloud computing cluster dynamic virtual" onclick="highlightMapNode('svg-load-balancer')">
+                    <div class="glass-panel p-4 component-card">
+                        <div>
+                            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="100%" height="100%" fill="#0a0f1d"/>
+                                <g transform="translate(60, 25)">
+                                    <path d="M 20,45 Q 10,45 10,35 Q 10,25 25,25 Q 30,15 45,15 Q 65,15 65,30 Q 75,30 75,40 Q 75,48 60,48 Z" fill="rgba(155, 81, 224, 0.2)" stroke="#9b51e0" stroke-width="1.5" />
+                                    <circle cx="35" cy="35" r="3" fill="#9b51e0" />
+                                    <circle cx="50" cy="30" r="3" fill="#9b51e0" />
+                                    <line x1="35" y1="35" x2="50" y2="30" stroke="#9b51e0" stroke-width="1" />
+                                </g>
+                            </svg>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-bold mb-0 text-neon-cyan">12. Cloud Systems</h5>
+                                <span class="badge-tech">K8s / AWS</span>
+                            </div>
+                            <p class="text-white small">
+                                Scales computational capacity dynamically. Spins up thousands of virtualized server containers in response to high user engagement.
+                            </p>
+                        </div>
+                        <div class="border-top border-secondary border-opacity-25 pt-2 mt-2 d-flex justify-content-between text-white small">
+                            <span>Engine: Kubernetes</span>
+                            <span>Scale factor: Auto-Scaling</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 13. User Devices -->
+                <div class="col-lg-4 col-md-6 component-item" data-tags="user devices clients laptop mobile" onclick="highlightMapNode('svg-api-gateway')">
+                    <div class="glass-panel p-4 component-card">
+                        <div>
+                            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="100%" height="100%" fill="#0a0f1d"/>
+                                <g transform="translate(50, 25)">
+                                    <rect x="10" y="20" width="55" height="35" rx="2" fill="rgba(0, 242, 254, 0.05)" stroke="#00f2fe" stroke-width="1.5" />
+                                    <line x1="0" y1="55" x2="75" y2="55" stroke="#00f2fe" stroke-width="3" />
+                                    <rect x="75" y="15" width="20" height="40" rx="3" fill="rgba(155, 81, 224, 0.05)" stroke="#9b51e0" stroke-width="1.5" />
+                                    <circle cx="85" cy="50" r="2" fill="#9b51e0" />
+                                </g>
+                            </svg>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-bold mb-0 text-neon-cyan">13. User Devices</h5>
+                                <span class="badge-tech">iOS / Android / Web</span>
+                            </div>
+                            <p class="text-white small">
+                                The clients that trigger requests. They cache localized content and build secure handshake pipelines with the core backend services.
+                            </p>
+                        </div>
+                        <div class="border-top border-secondary border-opacity-25 pt-2 mt-2 d-flex justify-content-between text-white small">
+                            <span>Handshake: TLS 1.3</span>
+                            <span>Network: HTTP/3 Ready</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 14. Integrated City -->
+                <div class="col-lg-4 col-md-6 component-item" data-tags="smart city network architecture central hub arch sign" onclick="highlightMapNode('svg-api-gateway')">
+                    <div class="glass-panel p-4 component-card">
+                        <div>
+                            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="100%" height="100%" fill="#0a0f1d"/>
+                                <g transform="translate(40, 20)">
+                                    <circle cx="20" cy="20" r="6" fill="#00f2fe" filter="url(#glow)" />
+                                    <circle cx="100" cy="20" r="6" fill="#9b51e0" />
+                                    <circle cx="60" cy="65" r="6" fill="#ff007f" />
+                                    <line x1="20" y1="20" x2="100" y2="20" stroke="#fff" stroke-dasharray="3" opacity="0.6" />
+                                    <line x1="20" y1="20" x2="60" y2="65" stroke="#fff" stroke-dasharray="3" opacity="0.6" />
+                                    <line x1="100" y1="20" x2="60" y2="65" stroke="#fff" stroke-dasharray="3" opacity="0.6" />
+                                </g>
+                            </svg>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-bold mb-0 text-neon-cyan">14. Integrated City</h5>
+                                <span class="badge-tech">Microservice Mesh</span>
+                            </div>
+                            <p class="text-white small">
+                                The aggregate system where services interact. Relies on service registries and telemetry collection to maintain a healthy data ecosystem.
+                            </p>
+                        </div>
+                        <div class="border-top border-secondary border-opacity-25 pt-2 mt-2 d-flex justify-content-between text-white small">
+                            <span>Service Mesh: Istio</span>
+                            <span>Discovery: Consul</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- INTERACTIVE FEATURE: SYSTEM DESIGN CHALLENGE -->
+    <section class="py-5 bg-dark border-top border-secondary border-opacity-25" id="challenge">
+        <div class="container">
+            <div class="glass-panel p-4 p-lg-5">
+                <span class="badge-tech mb-3"><i class="fa-solid fa-graduation-cap me-1"></i> Interactive Diagnostic Diagnostic</span>
+                <h3 class="fw-bold text-white mb-3">System Design Challenge: The Celebrity Fanout Dilemma</h3>
+                <p class="text-white mb-4" style="font-size: 1.05rem;">
+                    When a celebrity user with 100 million followers posts a tweet, writing that tweet immediately to 100 million individual follower home timelines (fanout-on-write) would saturate the Redis cache cluster and cause significant system latency. How does our architecture city solve this?
+                </p>
+                
+                <div class="row g-3" id="quiz-options">
+                    <div class="col-md-4">
+                        <button class="btn btn-outline-info w-100 p-3 text-start text-white" onclick="submitQuizOption(1)">
+                            <strong>A. Pure Push Strategy</strong><br>
+                            <span class="small text-muted">Force feed creation on write anyway.</span>
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-outline-info w-100 p-3 text-start text-white" onclick="submitQuizOption(2)">
+                            <strong>B. Hybrid Feed Strategy</strong><br>
+                            <span class="small text-muted">Incorporate dynamic pull-on-read logic.</span>
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-outline-info w-100 p-3 text-start text-white" onclick="submitQuizOption(3)">
+                            <strong>C. Direct SQL Sharding</strong><br>
+                            <span class="small text-muted">Route directly to sharded databases.</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-3 rounded d-none" id="quiz-result" style="background: rgba(30, 41, 59, 0.8); border: 1px solid var(--border-glow);">
+                    <!-- Dynamic Feedback text populated by JS -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ARCHITECTURE FLOW SECTION & LIVE CONSOLE -->
+    <section class="py-5 bg-dark border-top border-secondary border-opacity-25" id="flow">
+        <div class="container">
+            <div class="row g-5 align-items-center">
+                <!-- INFOGRAPHIC FLOW DIAGRAM -->
+                <div class="col-lg-6">
+                    <h3 class="fw-bold mb-3 text-white">Interactive Processing Sequence</h3>
+                    <p class="text-white" style="font-size: 1.05rem;">
+                        Follow the journey of a client request as it routes through Twitter Backend City's structural pipeline.
+                    </p>
+
+                    <div class="flow-diagram-container">
+                        <!-- Step 1 -->
+                        <div class="flow-step-node active" id="node-1">
+                            <span class="badge-tech me-3">01</span>
+                            <div>
+                                <h6 class="mb-0 text-white-bold">Client Handshake</h6>
+                                <p class="text-white mb-0 small">User Device initializes connections.</p>
+                            </div>
+                        </div>
+                        <div class="flow-arrow"><i class="fa-solid fa-angle-down"></i></div>
+
+                        <!-- Step 2 -->
+                        <div class="flow-step-node" id="node-2">
+                            <span class="badge-tech me-3">02</span>
+                            <div>
+                                <h6 class="mb-0 text-white-bold">API Checkpoint & Auth</h6>
+                                <p class="text-white mb-0 small">API Gateway checks and validates security tokens.</p>
+                            </div>
+                        </div>
+                        <div class="flow-arrow"><i class="fa-solid fa-angle-down"></i></div>
+
+                        <!-- Step 3 -->
+                        <div class="flow-step-node" id="node-3">
+                            <span class="badge-tech me-3">03</span>
+                            <div>
+                                <h6 class="mb-0 text-white-bold">Load Balancing Distribution</h6>
+                                <p class="text-white mb-0 small">LB allocates resources across active instances.</p>
+                            </div>
+                        </div>
+                        <div class="flow-arrow"><i class="fa-solid fa-angle-down"></i></div>
+
+                        <!-- Step 4 -->
+                        <div class="flow-step-node" id="node-4">
+                            <span class="badge-tech me-3">04</span>
+                            <div>
+                                <h6 class="mb-0 text-white-bold">Service Processing Core</h6>
+                                <p class="text-white mb-0 small">Tweet / Feed services execute application logic.</p>
+                            </div>
+                        </div>
+                        <div class="flow-arrow"><i class="fa-solid fa-angle-down"></i></div>
+
+                        <!-- Step 5 -->
+                        <div class="flow-step-node" id="node-5">
+                            <span class="badge-tech me-3">05</span>
+                            <div>
+                                <h6 class="mb-0 text-white-bold">Cache and Storage Vaults</h6>
+                                <p class="text-white mb-0 small">Checks cache, updates database storage, and alerts event queues.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LIVE SIMULATOR CONSOLE -->
+                <div class="col-lg-6" id="simulation">
+                    <div class="glass-panel p-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold mb-0 text-neon-cyan"><i class="fa-solid fa-terminal me-2"></i>Live Pipeline Simulator</h5>
+                            <button class="btn btn-outline-info btn-sm" id="btn-run-simulation" style="font-weight: 700;">
+                                <i class="fa-solid fa-play me-1"></i> Post Tweet Event
+                            </button>
+                        </div>
+                        <p class="text-white small">
+                            Trigger a mock event to watch the traffic stream move through each structural step in the city console below.
+                        </p>
+                        
+                        <div class="console-window text-light" id="console-output">
+                            <div class="console-line text-neon-yellow">[System Info] Console active. Trigger an event to start tracing.</div>
+                        </div>
+
+                        <!-- Interactive Status Panel -->
+                        <div class="row g-3 mt-3">
+                            <div class="col-6">
+                                <div class="p-3 bg-black rounded border border-secondary border-opacity-50">
+                                    <span class="d-block text-white small">LAST LATENCY</span>
+                                    <strong class="text-neon-cyan" id="sim-latency">-- ms</strong>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-3 bg-black rounded border border-secondary border-opacity-50">
+                                    <span class="d-block text-white small">ROUTING STATUS</span>
+                                    <strong class="text-neon-green" id="sim-status">IDLE</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PHYSICAL MODEL GALLERY -->
+    <section class="py-5 bg-dark border-top border-secondary border-opacity-25" id="physical-gallery">
+        <div class="container">
+            <div class="text-center mb-5">
+                <span class="badge-tech mb-2">Exhibition Showcase</span>
+                <h2 class="fw-bold text-white">Physical Model Exhibition</h2>
+                <p class="text-white max-w-2xl mx-auto" style="font-size: 1.05rem;">Visual representations of the physical Twitter Backend City project as designed, assembled, and presented during the technical evaluation.</p>
+            </div>
+
+            <div class="row g-4">
+                <!-- Image 1: Close-up of Model -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="gallery-item rounded overflow-hidden position-relative" onclick="switchMainView('physical')">
+                        <img src="t4.jpeg" alt="Twitter Backend City Physical Model Close Up" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'200\' viewBox=\'0 0 300 200\'><rect width=\'300\' height=\'200\' fill=\'%230f172a\'/><text x=\'150\' y=\'100\' fill=\'%2300f2fe\' font-size=\'14\' text-anchor=\'middle\'>[ physical_model_closeup.jpg ]</text></svg>';">
+                        <div class="p-3">
+                            <h6 class="text-white mb-1">Architecture Layout</h6>
+                            <p class="text-white small mb-0">Detailed view showing the central Load Balancer tower, the colored microservice houses, the SQL Database unit, and the Cache server array.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Image 2: Team Photo -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="gallery-item rounded overflow-hidden position-relative">
+                        <img src="t3.jpeg" alt="Twitter Backend City Project Development Team" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'200\' viewBox=\'0 0 300 200\'><rect width=\'300\' height=\'200\' fill=\'%230f172a\'/><text x=\'150\' y=\'100\' fill=\'%2300f2fe\' font-size=\'14\' text-anchor=\'middle\'>[ project_team.jpg ]</text></svg>';">
+                        <div class="p-3">
+                            <h6 class="text-white mb-1">Development Team</h6>
+                            <p class="text-white small mb-0">The project development team standing alongside the Twitter Backend City architectural model during exhibition setup.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Image 3: Presentation Group -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="gallery-item rounded overflow-hidden position-relative">
+                        <img src="t1.jpeg" alt="Technical Presentation Pune" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'200\' viewBox=\'0 0 300 200\'><rect width=\'300\' height=\'200\' fill=\'%230f172a\'/><text x=\'150\' y=\'100\' fill=\'%2300f2fe\' font-size=\'14\' text-anchor=\'middle\'>[ project_presentation_1.jpg ]</text></svg>';">
+                        <div class="p-3">
+                            <h6 class="text-white mb-1">Technical Presentation</h6>
+                            <p class="text-white small mb-0">Presenting the microservice data flows and structural blocks to academic evaluators at Zeal College of Engineering, Pune.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Image 4: Exhibition Floor Overview -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="gallery-item rounded overflow-hidden position-relative">
+                        <img src="t2.jpeg" alt="Exhibition Hall Overview Pune" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'200\' viewBox=\'0 0 300 200\'><rect width=\'300\' height=\'200\' fill=\'%230f172a\'/><text x=\'150\' y=\'100\' fill=\'%2300f2fe\' font-size=\'14\' text-anchor=\'middle\'>[ project_presentation_2.jpg ]</text></svg>';">
+                        <div class="p-3">
+                            <h6 class="text-white mb-1">Exhibition Floor Overview</h6>
+                            <p class="text-white small mb-0">A wider angle capturing the exhibition space, physical models, and live project walk-throughs during the evaluation session.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MEET THE CREATOR & ARCHITECT SECTION -->
+    <section class="py-5 architect-section" id="creator">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold mb-2 text-white">Meet the Architect</h2>
+                <p class="text-white">The developer and designer behind the Twitter Backend City architectural project</p>
+            </div>
+
+            <div class="row justify-content-center align-items-center g-4">
+                <div class="col-md-5 col-lg-4 text-center">
+                    <div class="architect-image-container">
+                        <div class="architect-img-frame">
+                            <img src="srush.jpg" alt="Srushti Gorade" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'400\' viewBox=\'0 0 300 400\'><rect width=\'300\' height=\'400\' fill=\'%230f172a\'/><text x=\'150\' y=\'200\' fill=\'%2300f2fe\' font-family=\'sans-serif\' font-size=\'16\' text-anchor=\'middle\'>[ srushti_gorade.jpg ]</text></svg>';">
+                        </div>
+                        <div class="architect-accent-tag">
+                            <i class="fa-solid fa-laptop-code me-2"></i>SRUSHTI GORADE
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-7 col-lg-6 mt-5 mt-md-0">
+                    <div class="glass-panel p-4 p-lg-5">
+                        <span class="badge-tech mb-3"><i class="fa-solid fa-terminal me-1"></i> Creator</span>
+                        <h3 class="fw-bold text-white mb-3">Srushti Gorade</h3>
+                        <p class="text-white" style="line-height: 1.6;">
+                           I am passionate about building the unseen engine behind modern applications. By combining backend engineering, AI, and thoughtful system design, I aim to create technology that is reliable, scalable, and built for real-world impact.My aim to strengthen my backend development skills while creating software that can solve meaningful problems.
+                        </p>
+                        <p class="text-white mb-4" style="line-height: 1.6;">
+                            This companion digital reference coordinates exactly with the physical cardboard model presented during technical evaluations, illustrating how data pathways communicate across decentralized services.
+                        </p>
+                        
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="d-flex align-items-center text-white small">
+                                    <i class="fa-solid fa-cube text-info me-2"></i> Physical Model Sync
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="d-flex align-items-center text-white small">
+                                    <i class="fa-solid fa-code-branch text-info me-2"></i> Full-Stack Layout
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="d-flex align-items-center text-white small">
+                                    <i class="fa-solid fa-diagram-project text-info me-2"></i> System Blueprinting
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="d-flex align-items-center text-white small">
+                                    <i class="fa-solid fa-microchip text-info me-2"></i> Scale Optimization
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container text-center">
+           
+            <div class="d-flex justify-content-center gap-3 mb-4">
+                <a href="#overview" class="text-white"><i class="fa-brands fa-github fa-lg"></i></a>
+                <a href="#overview" class="text-white"><i class="fa-brands fa-twitter fa-lg"></i></a>
+                <a href="#overview" class="text-white"><i class="fa-brands fa-linkedin fa-lg"></i></a>
+            </div>
+            <p class="text-white small mb-0">&copy; 2026 Twitter Backend City. Designed & Created by <strong>Srushti Gorade</strong>.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- ARCHITECTURE CONTROLLER -->
+    <script>
+        // Switch between Digital Blueprint and Physical Cardboard Model views
+        function switchMainView(viewType) {
+            const btnDigital = document.getElementById('btn-toggle-digital');
+            const btnPhysical = document.getElementById('btn-toggle-physical');
+            const viewDigital = document.getElementById('container-view-digital');
+            const viewPhysical = document.getElementById('container-view-physical');
+
+            if (viewType === 'digital') {
+                btnDigital.classList.add('active');
+                btnPhysical.classList.remove('active');
+                viewDigital.classList.remove('d-none');
+                viewPhysical.classList.add('d-none');
+            } else {
+                btnPhysical.classList.add('active');
+                btnDigital.classList.remove('active');
+                viewPhysical.classList.remove('d-none');
+                viewDigital.classList.add('d-none');
+            }
+        }
+
+        // Highlighting active nodes on the interactive SVG model
+        function highlightMapNode(nodeId) {
+            switchMainView('digital'); // Ensure we are on digital map to see highlight
+
+            const elements = ['svg-api-gateway', 'svg-load-balancer', 'svg-notification', 'svg-messaging', 'svg-feed', 'svg-cache', 'svg-database', 'svg-security'];
+            elements.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('highlight-pulse');
+            });
+
+            const target = document.getElementById(nodeId);
+            if (target) {
+                target.classList.add('highlight-pulse');
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        // Capacity Planner Calculator Logic
+        const rpsSlider = document.getElementById('rps-slider');
+        const rpsVal = document.getElementById('rps-val');
+        
+        rpsSlider.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            rpsVal.innerText = val.toLocaleString() + " RPS";
+
+            const redisGB = Math.round((val / 15000) * 45);
+            const kafkaNodes = Math.round((val / 15000) * 24);
+            const replicationLag = Math.round((val / 15000) * 150);
+            const estData = ((val / 15000) * 1.2).toFixed(1);
+
+            document.getElementById('metric-redis').innerText = redisGB + " GB";
+            document.getElementById('metric-kafka').innerText = kafkaNodes + " Nodes";
+            document.getElementById('metric-lag').innerText = replicationLag + " ms";
+            document.getElementById('metric-storage').innerText = estData + " TB";
+
+            document.getElementById('progress-redis').style.width = Math.min((redisGB / 150) * 100, 100) + "%";
+            document.getElementById('progress-kafka').style.width = Math.min((kafkaNodes / 80) * 100, 100) + "%";
+            document.getElementById('progress-lag').style.width = Math.min((replicationLag / 500) * 100, 100) + "%";
+            document.getElementById('progress-storage').style.width = Math.min((estData / 4.0) * 100, 100) + "%";
+        });
+
+        // Diagnostic Assessment/Quiz Logic
+        function submitQuizOption(optionIndex) {
+            const resultBox = document.getElementById('quiz-result');
+            resultBox.classList.remove('d-none');
+
+            if (optionIndex === 1) {
+                resultBox.innerHTML = `
+                    <span class="text-neon-red fw-bold">❌ Incorrect: Pure Push Strategy</span><br>
+                    <span class="text-white">Pushing updates instantly to 100M active home timelines requires too many parallel write transactions to the Redis cluster, creating severe write latency and performance bottlenecks.</span>
+                `;
+            } else if (optionIndex === 2) {
+                resultBox.innerHTML = `
+                    <span class="text-neon-green fw-bold">✅ Correct: Hybrid Feed Strategy</span><br>
+                    <span class="text-white">Twitter uses a hybrid approach. High-profile users (celebrities) bypass the push fanout stream. Instead, when an average user opens their home feed, the system dynamically pulls high-profile tweets and merges them with pre-computed timelines in the cache. This maintains balanced read/write ratios.</span>
+                `;
+            } else if (optionIndex === 3) {
+                resultBox.innerHTML = `
+                    <span class="text-neon-red fw-bold">❌ Incorrect: Direct SQL Sharding</span><br>
+                    <span class="text-white">Executing direct relational SQL join queries over 100M rows on every timeline load creates massive database thread queue locks, which would overwhelm database hardware.</span>
+                `;
+            }
+        }
+
+        // Live Trace Simulation Engine
+        document.addEventListener('DOMContentLoaded', () => {
+            const runBtn = document.getElementById('btn-run-simulation');
+            const consoleOutput = document.getElementById('console-output');
+            const statusLabel = document.getElementById('sim-status');
+            const latencyLabel = document.getElementById('sim-latency');
+            const nodes = [
+                document.getElementById('node-1'),
+                document.getElementById('node-2'),
+                document.getElementById('node-3'),
+                document.getElementById('node-4'),
+                document.getElementById('node-5')
+            ];
+
+            const appendConsoleLine = (text, statusClass = '') => {
+                const line = document.createElement('div');
+                line.className = 'console-line active ' + statusClass;
+                
+                const time = new Date().toLocaleTimeString();
+                line.innerHTML = `<span class="text-white-bold">[${time}]</span> <span class="text-info">&gt;</span> ${text}`;
+                
+                consoleOutput.appendChild(line);
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                
+                setTimeout(() => {
+                    line.classList.remove('active');
+                }, 1000);
+            };
+
+            const runSimulationSteps = async () => {
+                runBtn.disabled = true;
+                statusLabel.innerText = "PROCESSING";
+                statusLabel.className = "text-warning";
+                latencyLabel.innerText = "calculating...";
+
+                nodes.forEach(n => n.classList.remove('active'));
+
+                // Step 1: Handshake
+                nodes[0].classList.add('active');
+                appendConsoleLine("Client handshake initialized over TLS 1.3.", 'text-neon-cyan');
+                await new Promise(r => setTimeout(r, 800));
+
+                // Step 2: Gate & Auth
+                nodes[0].classList.remove('active');
+                nodes[1].classList.add('active');
+                appendConsoleLine("API Gateway Tower intercepted packet. Checking Auth Center credentials...");
+                await new Promise(r => setTimeout(r, 1000));
+                appendConsoleLine("Security validation complete. JWT confirmed.", 'text-neon-green');
+                await new Promise(r => setTimeout(r, 600));
+
+                // Step 3: Load Balancing
+                nodes[1].classList.remove('active');
+                nodes[2].classList.add('active');
+                appendConsoleLine("Load Balancer identified optimal target container. Forwarding traffic.");
+                await new Promise(r => setTimeout(r, 700));
+
+                // Step 4: Core Services
+                nodes[2].classList.remove('active');
+                nodes[3].classList.add('active');
+                appendConsoleLine("Tweet Service processing new write event. Generating Snowflake ID...");
+                const fakeId = Math.floor(Math.random() * 1000000000);
+                await new Promise(r => setTimeout(r, 800));
+                appendConsoleLine(`Tweet entity committed safely under Snowflake ID: ${fakeId}`, 'text-neon-yellow');
+
+                // Step 5: DB & Queues
+                nodes[3].classList.remove('active');
+                nodes[4].classList.add('active');
+                appendConsoleLine("Propagating record to Database Vault & Cache Warehouse pipelines.");
+                await new Promise(r => setTimeout(r, 1000));
+                appendConsoleLine("Message dispatched successfully. Fanout caches updated.", 'text-neon-green');
+
+                // Final Clean Up
+                nodes[4].classList.remove('active');
+                statusLabel.innerText = "SUCCESS";
+                statusLabel.className = "text-success";
+                
+                const randomLatency = Math.floor(Math.random() * 45) + 55; // 55ms - 100ms
+                latencyLabel.innerText = `${randomLatency} ms`;
+                runBtn.disabled = false;
+            };
+
+            runBtn.addEventListener('click', runSimulationSteps);
+        });
+    </script>
+</body>
+</html>
